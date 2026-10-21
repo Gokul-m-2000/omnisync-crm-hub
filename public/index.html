@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OmniSync // CRM & Automation Hub</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Configure Tailwind theme -->
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#eef2ff',
+              500: '#6366f1',
+              600: '#4f46e5',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+    body { font-family: 'Inter', sans-serif; }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col antialiased selection:bg-indigo-500 selection:text-white">
+
+  <!-- Top Navigation Header -->
+  <header class="border-b border-slate-800/80 bg-slate-900/60 backdrop-blur-md sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      
+      <!-- Logo & Title -->
+      <div class="flex items-center space-x-3">
+        <div class="w-9 h-9 rounded-lg bg-indigo-600 flex items-center justify-center shadow-lg shadow-indigo-500/25">
+          <i data-lucide="zap" class="w-5 h-5 text-white"></i>
+        </div>
+        <div>
+          <h1 class="text-base font-semibold tracking-tight text-white flex items-center gap-2">
+            OmniSync <span class="text-xs px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 font-normal">v1.0</span>
+          </h1>
+          <p class="text-xs text-slate-400">HubSpot & Salesforce · n8n Automation Bridge</p>
+        </div>
+      </div>
+
+      <!-- Live Server Status Indicator & Global Action -->
+      <div class="flex items-center space-x-4">
+        <div class="hidden sm:flex items-center space-x-2 px-3 py-1.5 rounded-full bg-slate-800/60 border border-slate-700/60 text-xs">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          <span class="text-slate-300 font-medium" id="server-status-pill">Backend Connected</span>
+        </div>
+        
+        <button id="btn-sync-all" onclick="syncAllLeads()" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-medium shadow-md shadow-indigo-600/20 transition-all active:scale-95">
+          <i data-lucide="refresh-cw" class="w-3.5 h-3.5" id="sync-icon"></i>
+          <span>Trigger n8n Workflow</span>
+        </button>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- Notification Toast Container -->
+  <div id="toast" class="fixed top-20 right-6 z-50 hidden transition-all duration-300 transform translate-y-0">
+    <div class="flex items-center gap-3 px-4 py-3 rounded-xl bg-slate-900 border border-slate-700 shadow-2xl text-xs text-white">
+      <i data-lucide="check-circle" class="w-4 h-4 text-emerald-400"></i>
+      <span id="toast-message">Workflow triggered successfully!</span>
+    </div>
+  </div>
+
+  <!-- Main Content Layout -->
+  <main class="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full space-y-8">
+    
+    <!-- Hero / Headline -->
+    <div>
+      <h2 class="text-2xl font-bold tracking-tight text-white">Automation Operations</h2>
+      <p class="text-sm text-slate-400 mt-1">Live CRM synchronization pipeline and webhook health monitor.</p>
+    </div>
+
+    <!-- 4 KPI Metrics Grid -->
+    <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      
+      <!-- Metric 1: Pipeline Value -->
+      <div class="bg-slate-900/60 border border-slate-800 p-5 rounded-2xl relative overflow-hidden backdrop-blur-sm">
+        <div class="flex items-center justify-between text-slate-400">
+          <span class="text-xs font-medium uppercase tracking-wider">Pipeline Value</span>
+          <i data-lucide="dollar-sign" class="w-4 h-4 text-indigo-400"></i>
+        </div>
+        <p class="text-2xl font-bold text-white mt-3" id="metric-pipeline">$0</p>
+        <span class="text-xs text-emerald-400 mt-1 inline-flex items-center gap-1">
+          <i data-lucide="trending-up" class="w-3 h-3"></i> Qualified deals
+        </span>
+      </div>
+
+      <!-- Metric 2: Total Leads -->
+      <div class="bg-slate-900/60 border border-slate-800 p-5 rounded-2xl relative overflow-hidden backdrop-blur-sm">
+        <div class="flex items-center justify-between text-slate-400">
+          <span class="text-xs font-medium uppercase tracking-wider">Total CRM Leads</span>
+          <i data-lucide="users" class="w-4 h-4 text-indigo-400"></i>
+        </div>
+        <p class="text-2xl font-bold text-white mt-3" id="metric-total-leads">0</p>
+        <span class="text-xs text-slate-400 mt-1 inline-block">Active in database</span>
+      </div>
+
+      <!-- Metric 3: Synced via n8n -->
+      <div class="bg-slate-900/60 border border-slate-800 p-5 rounded-2xl relative overflow-hidden backdrop-blur-sm">
+        <div class="flex items-center justify-between text-slate-400">
+          <span class="text-xs font-medium uppercase tracking-wider">Synced via n8n</span>
+          <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-400"></i>
+        </div>
+        <p class="text-2xl font-bold text-white mt-3" id="metric-synced">0</p>
+        <span class="text-xs text-emerald-400 mt-1 inline-block" id="metric-sync-health">0% sync rate</span>
+      </div>
+
+      <!-- Metric 4: Pending / Needs Action -->
+      <div class="bg-slate-900/60 border border-slate-800 p-5 rounded-2xl relative overflow-hidden backdrop-blur-sm">
+        <div class="flex items-center justify-between text-slate-400">
+          <span class="text-xs font-medium uppercase tracking-wider">Pending / Attention</span>
+          <i data-lucide="alert-circle" class="w-4 h-4 text-amber-400"></i>
+        </div>
+        <p class="text-2xl font-bold text-white mt-3" id="metric-pending">0</p>
+        <span class="text-xs text-amber-400 mt-1 inline-block" id="metric-failed-sub">0 failed webhooks</span>
+      </div>
+
+    </section>
+
+    <!-- CRM Table Section -->
+    <section class="bg-slate-900/50 border border-slate-800 rounded-2xl overflow-hidden backdrop-blur-sm">
+      
+      <!-- Table Controls: Search & Filter -->
+      <div class="p-4 sm:p-5 border-b border-slate-800/80 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+        <div class="relative flex-1 max-w-sm">
+          <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+          <input 
+            type="text" 
+            id="search-input" 
+            oninput="filterTable()"
+            placeholder="Search lead or company..." 
+            class="w-full bg-slate-950 border border-slate-800 rounded-lg pl-9 pr-4 py-2 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition-colors"
+          />
+        </div>
+
+        <div class="flex items-center gap-2">
+          <label for="status-filter" class="text-xs text-slate-400">Status:</label>
+          <select 
+            id="status-filter" 
+            onchange="filterTable()"
+            class="bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-indigo-500 transition-colors"
+          >
+            <option value="ALL">All Statuses</option>
+            <option value="synced">Synced</option>
+            <option value="pending">Pending</option>
+            <option value="failed">Failed</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Data Table -->
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-xs">
+          <thead class="bg-slate-950/60 text-slate-400 uppercase tracking-wider text-[11px] border-b border-slate-800/80">
+            <tr>
+              <th class="px-6 py-3.5 font-medium">Lead Contact</th>
+              <th class="px-6 py-3.5 font-medium">Company</th>
+              <th class="px-6 py-3.5 font-medium">Deal Value</th>
+              <th class="px-6 py-3.5 font-medium">n8n Sync Status</th>
+              <th class="px-6 py-3.5 font-medium">Last Sync</th>
+              <th class="px-6 py-3.5 font-medium text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="leads-table-body" class="divide-y divide-slate-800/50">
+            <!-- Dynamically populated by app.js -->
+            <tr>
+              <td colspan="6" class="px-6 py-8 text-center text-slate-500">
+                <div class="inline-flex items-center gap-2">
+                  <span class="w-2 h-2 rounded-full bg-indigo-500 animate-ping"></span>
+                  Loading CRM data...
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="border-t border-slate-800/80 py-4 text-center text-xs text-slate-500">
+    Deployed for Enterprise Automation · Built with Node.js & Tailwind CSS
+  </footer>
+
+  <!-- App Script -->
+  <script src="/app.js"></script>
+</body>
+</html>

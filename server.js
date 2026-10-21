@@ -9,6 +9,7 @@ const PORT = process.env.PORT || 3001;
 // Middleware
 app.use(cors()); // Allow frontend dashboard to communicate with backend
 app.use(express.json()); // Parse incoming JSON request bodies
+app.use(express.static('public')); // Serve frontend dashboard from public folder
 
 // -------------------------------------------------------------
 // Realistic Mock CRM Data (HubSpot/Salesforce Schema)
