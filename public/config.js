@@ -14,5 +14,5 @@
 // import.meta.env.VITE_API_URL works at build time.
 // ---------------------------------------------------------------------------
 window.APP_CONFIG = {
-  API_URL: '',
+  API_URL: 'https://omnisync-crm-hub-production.up.railway.app',
 };
