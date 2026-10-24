@@ -1,15 +1,25 @@
 {
   "name": "prototype-antigravity",
-  "version": "1.0.0",
+  "version": "2.0.0",
+  "private": true,
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "node --watch server.js"
+    "dev": "node --watch server.js",
+    "test": "node --test"
   },
-  "keywords": [],
-  "author": "",
+  "engines": {
+    "node": ">=20.18"
+  },
+  "keywords": [
+    "n8n",
+    "crm",
+    "automation",
+    "railway",
+    "vercel"
+  ],
   "license": "ISC",
-  "description": "",
+  "description": "Practice project: browser -> Railway API -> n8n -> CRM, with an honest sync run log.",
   "dependencies": {
     "cors": "^2.8.6",
     "dotenv": "^18.0.8",

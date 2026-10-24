@@ -1,0 +1,82 @@
+{
+  "name": "OmniSync - CRM sync demo",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "crm-sync",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "id": "6f1c1a10-0001-4000-8000-000000000001",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [-220, 0],
+      "webhookId": "omnisync-crm-sync"
+    },
+    {
+      "parameters": {
+        "jsCode": "// This Code node stands in for a real CRM call.\n// Replace it later with HubSpot, Salesforce, Google Sheets, Airtable...\nconst body = $json.body ?? $json;\nconst lead = body.lead ?? {};\n\nif (!lead.id) {\n  return [{ json: { runId: body.runId, status: 'failed', message: 'No lead in payload - check the Webhook node' } }];\n}\n\nreturn [{\n  json: {\n    runId: body.runId,\n    status: 'synced',\n    message: `Synced ${lead.name || lead.id} (${lead.company || 'unknown company'})`\n  }\n}];"
+      },
+      "id": "6f1c1a10-0002-4000-8000-000000000002",
+      "name": "Pretend CRM write",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [20, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:3001/api/webhooks/n8n",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Webhook-Secret",
+              "value": "dev-secret-change-me"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "id": "6f1c1a10-0003-4000-8000-000000000003",
+      "name": "Callback to app",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [260, 0]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Pretend CRM write",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pretend CRM write": {
+      "main": [
+        [
+          {
+            "node": "Callback to app",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "active": false,
+  "pinData": {}
+}

@@ -13,13 +13,19 @@ node_modules/
 # Production build outputs
 dist/
 build/
+.vercel/
+
+# Logs
+*.log
 
 # Python virtual environments & bytecode
 __pycache__/
 *.py[cod]
 *$py.class
 .venv/
+backend/venv/
 venv/
+backend/venv/
 ENV/
 
 # System and Editor files
