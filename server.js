@@ -30,15 +30,34 @@ const WEBHOOK_SECRET = process.env.N8N_WEBHOOK_SECRET || '';
 const DEMO_MODE = process.env.DEMO_MODE === 'true';
 const N8N_TIMEOUT_MS = Number(process.env.N8N_TIMEOUT_MS || 15000);
 
-// Only these websites may call this API from a browser.
-// Add your Vercel URL here when you deploy, e.g.
-//   CORS_ORIGINS=https://omnisync.vercel.app,https://app.client.com
-const CORS_ORIGINS = (process.env.CORS_ORIGINS || 'http://localhost:3001,http://localhost:5173')
+// Allowed origins for browser calls. Defaults include local dev and your Vercel domain.
+const defaultOrigins = [
+  'http://localhost:3001',
+  'http://localhost:5173',
+  'https://omnisync-crm-hub-public.vercel.app',
+];
+const envOrigins = (process.env.CORS_ORIGINS || '')
   .split(',')
   .map((origin) => origin.trim())
   .filter(Boolean);
 
-app.use(cors({ origin: CORS_ORIGINS }));
+const allowedOrigins = envOrigins.length > 0 ? envOrigins : defaultOrigins;
+
+app.use(cors({
+  origin: (origin, callback) => {
+    // Allow non-browser requests (e.g. n8n webhooks, curl, Postman) where origin is undefined
+    if (!origin) return callback(null, true);
+    if (
+      allowedOrigins.includes('*') ||
+      allowedOrigins.includes(origin) ||
+      origin.endsWith('.vercel.app')
+    ) {
+      return callback(null, true);
+    }
+    return callback(new Error(`CORS blocked for origin: ${origin}`));
+  },
+  credentials: true,
+}));
 app.use(express.json({ limit: '100kb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
@@ -149,12 +168,12 @@ function finishRun(runId, status, message) {
   return run;
 }
 
-// Compare two secrets without leaking the answer through response time.
+// Compare two secrets in constant time without leaking secret length via response timing.
 function secretsMatch(a, b) {
-  const left = Buffer.from(String(a));
-  const right = Buffer.from(String(b));
-  if (left.length !== right.length) return false;
-  return crypto.timingSafeEqual(left, right);
+  if (!a || !b) return false;
+  const hashA = crypto.createHash('sha256').update(String(a)).digest();
+  const hashB = crypto.createHash('sha256').update(String(b)).digest();
+  return crypto.timingSafeEqual(hashA, hashB);
 }
 
 function describeFetchError(error) {
